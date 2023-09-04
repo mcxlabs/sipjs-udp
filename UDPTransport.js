@@ -1,5 +1,5 @@
-const udp = require('dgram');
-
+import dgram from 'react-native-udp';
+//const dgram = require('dgram');
 class UDPTransport {
   constructor(logger, options) {
     this.logger = logger;
@@ -7,23 +7,23 @@ class UDPTransport {
     this.server = options.server;
   }
   connect() {
-    this.client = udp.createSocket('udp4');
+    this.client = dgram.createSocket({type: "udp4"});
 
     this.client.on('error', (err) => {
-      this.logger.warn("UDP socket closed unexpectedly");
-      this.logger.log(err);
+      console.log("UDP socket closed unexpectedly");
+      console.log(err);
       this.client.close();
     });
 
     this.client.on('message', (msg, rinfo) => {
-      this.logMessage("received", msg);
+      console.log("received", msg);
       if (this.onMessage) {
         try {
           this.onMessage(msg.toString('utf8'));
         }
         catch (e) {
-          this.logger.error(e);
-          this.logger.error("Exception thrown by onMessage callback");
+          console.log(e);
+          console.log("Exception thrown by onMessage callback");
           throw e; // rethrow unhandled exception
         }
       }
@@ -31,10 +31,12 @@ class UDPTransport {
 
     this.client.on('listening', () => {
       const address = this.client.address();
+      console.log('connected listening recv');
+      this.send('testing');
     });
 
     return new Promise((resolve, reject) => {
-      this.client.connect(this.port, this.server, (err) => {
+      this.client.bind({port: this.port}, (err) => {
         if (err) reject(err);
         resolve();
       })
@@ -47,9 +49,9 @@ class UDPTransport {
   }
 
   send(data) {
-    this.logMessage("sending", data);
+    console.log("sending", data);
     return new Promise((resolve, reject) => {
-      this.client.send(data, (err) => {
+      this.client.send(data, 0,data.length,5060, '172.23.53.9', (err) => {
         if (err) reject(err);
         resolve();
       })
